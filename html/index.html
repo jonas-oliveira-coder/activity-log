@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro de Atividades por Hora (Local)</title>
+    <title>Registro de Atividades</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='white' stroke='black' stroke-width='5'/%3E%3Cline x1='50' y1='50' x2='50' y2='15' stroke='black' stroke-width='5'/%3E%3Cline x1='50' y1='50' x2='75' y2='50' stroke='black' stroke-width='5'/%3E%3C/svg%3E">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -43,7 +42,6 @@
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
 
-    <!-- Container Principal do App -->
     <div id="app-container">
         <div class="container mx-auto p-4 sm:p-6 lg:p-8">
             <header class="text-center mb-8 relative">
@@ -103,7 +101,6 @@
         </div>
     </div>
 
-    <!-- Modal de Edição de Atividade -->
     <div id="edit-activity-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg">
             <div class="p-6 border-b border-gray-200 dark:border-gray-700"><h2 class="text-2xl font-bold">Editar Atividade</h2></div>
@@ -126,7 +123,6 @@
         </div>
     </div>
 
-    <!-- Modal de Relatório -->
     <div id="report-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
             <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center no-print"><h2 class="text-2xl font-bold">Relatório Mensal</h2><button id="close-modal-btn" class="text-gray-500 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white text-3xl leading-none">&times;</button></div>
@@ -185,6 +181,13 @@
         
         document.addEventListener('DOMContentLoaded', async () => {
             await openDB();
+            
+            // --- CORREÇÃO DA DATA: Criar string da data atual ---
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const todayString = `${year}-${month}-${day}`;
             
             let lastReportSummary = {};
             let lastFilteredActivities = [];
@@ -302,7 +305,8 @@
                     const durationInMinutes = (endDateTime - startDateTime) / (1000 * 60);
                     await addToStore(ACTIVITIES_STORE, { description, category, date, startTime, endTime, durationInMinutes });
                     activityForm.reset();
-                    document.getElementById('activity-date').valueAsDate = new Date();
+                    // --- CORREÇÃO DA DATA: Resetar para a data correta ---
+                    document.getElementById('activity-date').value = todayString;
                     loadActivities();
                 }
             });
@@ -573,7 +577,8 @@
 
             function formatDuration(totalMinutes) { if (totalMinutes < 1) return "0m"; const h = Math.floor(totalMinutes / 60); const m = Math.round(totalMinutes % 60); return `${h}h ${m}m`; }
 
-            document.getElementById('activity-date').valueAsDate = new Date();
+            // --- CORREÇÃO DA DATA: Definir valor inicial ---
+            document.getElementById('activity-date').value = todayString;
             loadCategories();
             loadActivities();
         });
