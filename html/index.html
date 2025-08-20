@@ -1,0 +1,582 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Atividades por Hora (Local)</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='white' stroke='black' stroke-width='5'/%3E%3Cline x1='50' y1='50' x2='50' y2='15' stroke='black' stroke-width='5'/%3E%3Cline x1='50' y1='50' x2='75' y2='50' stroke='black' stroke-width='5'/%3E%3C/svg%3E">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .modal {
+            transition: opacity 0.3s ease;
+        }
+        @media print {
+            body, html {
+                background-color: white;
+            }
+            body > *:not(#print-area-wrapper) {
+                display: none;
+            }
+            #print-area-wrapper, #print-area {
+                display: block !important;
+                visibility: visible !important;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: auto;
+                box-shadow: none;
+                border: none;
+                margin: 0;
+                padding: 0;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+
+    <!-- Container Principal do App -->
+    <div id="app-container">
+        <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+            <header class="text-center mb-8 relative">
+                <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">Meu Registro de Atividades</h1>
+                <p class="text-gray-600 dark:text-gray-400 mt-2">Seus dados são salvos localmente no seu navegador.</p>
+            </header>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1 space-y-8">
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
+                        <h2 class="text-xl font-bold mb-4 border-b pb-2 border-gray-200 dark:border-gray-700">Gerenciar Categorias</h2>
+                        <div class="space-y-3">
+                            <div>
+                                <label for="parent-category-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Categoria Pai (opcional)</label>
+                                <select id="parent-category-select" class="mt-1 w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="null">Nenhuma (Categoria Principal)</option>
+                                </select>
+                            </div>
+                            <div class="flex space-x-2">
+                                <input type="text" id="new-category-name" placeholder="Nome da nova categoria" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <button id="add-category-btn" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-semibold transition-colors">Adicionar Categoria</button>
+                        </div>
+                         <h3 class="text-lg font-semibold mt-6 mb-2 border-t pt-4 border-gray-200 dark:border-gray-700">Categorias Existentes</h3>
+                        <div id="category-list" class="space-y-2 max-h-48 overflow-y-auto"></div>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
+                        <h2 class="text-xl font-bold mb-4 border-b pb-2 border-gray-200 dark:border-gray-700">Registrar Atividade</h2>
+                        <form id="activity-form" class="space-y-4">
+                            <input type="text" id="activity-description" placeholder="O que você fez?" class="mt-1 w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" required>
+                            <select id="activity-category" class="mt-1 w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" required><option value="">Selecione uma categoria</option></select>
+                            <input type="date" id="activity-date" class="mt-1 w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" required>
+                            <div class="grid grid-cols-2 gap-4">
+                                <input type="time" id="start-time" class="mt-1 w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" required>
+                                <input type="time" id="end-time" class="mt-1 w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" required>
+                            </div>
+                            <button type="submit" class="w-full bg-green-600 text-white py-2.5 rounded-lg hover:bg-green-700 font-bold transition-colors">Salvar Atividade</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="lg:col-span-2">
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
+                        <div class="flex justify-between items-center mb-4 border-b pb-2 border-gray-200 dark:border-gray-700">
+                            <h2 class="text-xl font-bold">Minhas Atividades</h2>
+                            <button id="report-btn" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 font-semibold transition-colors">Gerar Relatório</button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Descrição</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Categoria</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Data</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Duração</th><th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Ações</th></tr></thead>
+                                <tbody id="activities-table-body" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700"></tbody>
+                            </table>
+                        </div>
+                        <div id="empty-state" class="text-center py-10"><p class="text-gray-500 dark:text-gray-400">Nenhuma atividade registrada ainda.</p><p class="text-sm text-gray-400 dark:text-gray-500">Use o formulário ao lado para começar.</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Edição de Atividade -->
+    <div id="edit-activity-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700"><h2 class="text-2xl font-bold">Editar Atividade</h2></div>
+            <div class="p-8">
+                <form id="edit-activity-form" class="space-y-4">
+                    <input type="hidden" id="edit-activity-id">
+                    <div><label for="edit-activity-description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Descrição</label><input type="text" id="edit-activity-description" class="mt-1 w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" required></div>
+                    <div><label for="edit-activity-category" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Categoria</label><select id="edit-activity-category" class="mt-1 w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" required></select></div>
+                    <div><label for="edit-activity-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Data</label><input type="date" id="edit-activity-date" class="mt-1 w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" required></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label for="edit-start-time" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Início</label><input type="time" id="edit-start-time" class="mt-1 w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" required></div>
+                        <div><label for="edit-end-time" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Fim</label><input type="time" id="edit-end-time" class="mt-1 w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" required></div>
+                    </div>
+                </form>
+            </div>
+            <div class="p-6 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 rounded-b-2xl flex justify-end space-x-3">
+                <button id="cancel-edit-btn" type="button" class="bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 px-5 py-2.5 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 font-semibold">Cancelar</button>
+                <button id="save-edit-btn" type="submit" form="edit-activity-form" class="bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 font-semibold">Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Relatório -->
+    <div id="report-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center no-print"><h2 class="text-2xl font-bold">Relatório Mensal</h2><button id="close-modal-btn" class="text-gray-500 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white text-3xl leading-none">&times;</button></div>
+            <div class="flex-grow overflow-y-auto p-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="md:col-span-1 no-print border-r border-gray-200 dark:border-gray-700 pr-6">
+                    <h3 class="text-lg font-bold mb-2">Filtros</h3>
+                    <div class="mb-4"><label for="month-select" class="text-sm font-medium">Mês:</label><input type="month" id="month-select" class="mt-1 w-full px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg"></div>
+                    <div class="mb-4"><h4 class="font-semibold mb-2">Categorias</h4><div id="report-filters" class="space-y-2 max-h-64 overflow-y-auto"></div></div>
+                    <button id="apply-filters-btn" class="w-full bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 font-semibold">Gerar Relatório</button>
+                </div>
+                <div id="print-area-wrapper" class="md:col-span-2">
+                    <div id="print-area">
+                        <div class="flex justify-between items-start mb-8"><h3 id="report-title" class="text-xl font-bold">Relatório de Atividades</h3><p id="report-month" class="text-gray-600 dark:text-gray-400"></p></div>
+                        <div id="report-content" class="space-y-6"></div>
+                        <div class="mt-8 pt-4 border-t border-gray-200 dark:border-gray-700"><h4 class="text-lg font-bold">Total Geral de Horas Filtradas</h4><p id="report-total-hours" class="text-2xl font-bold text-blue-600 dark:text-blue-400"></p></div>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 rounded-b-2xl flex justify-end no-print">
+                <button id="export-btn" class="bg-green-600 text-white px-5 py-2.5 rounded-lg hover:bg-green-700 font-semibold">Baixar Planilha (XLS)</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DB_NAME = 'ActivityTrackerDB';
+        const DB_VERSION = 2; 
+        const CATEGORIES_STORE = 'categories';
+        const ACTIVITIES_STORE = 'activities';
+        let db;
+
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = (event) => {
+                    const dbInstance = event.target.result;
+                    if (!dbInstance.objectStoreNames.contains(CATEGORIES_STORE)) {
+                        const categoryStore = dbInstance.createObjectStore(CATEGORIES_STORE, { keyPath: 'id', autoIncrement: true });
+                        categoryStore.createIndex('parentId', 'parentId', { unique: false });
+                    }
+                    if (!dbInstance.objectStoreNames.contains(ACTIVITIES_STORE)) {
+                        const activityStore = dbInstance.createObjectStore(ACTIVITIES_STORE, { keyPath: 'id', autoIncrement: true });
+                        activityStore.createIndex('date', 'date', { unique: false });
+                    }
+                };
+                request.onsuccess = (event) => { db = event.target.result; console.log("Banco de dados local aberto com sucesso."); resolve(db); };
+                request.onerror = (event) => { console.error("Erro ao abrir o banco de dados:", event.target.error); reject(event.target.error); };
+            });
+        }
+
+        function addToStore(storeName, data) { return new Promise((resolve, reject) => { const t = db.transaction([storeName], 'readwrite'); t.objectStore(storeName).add(data).onsuccess = e => resolve(e.target.result); t.onerror = e => reject(e.target.error); }); }
+        function getAllFromStore(storeName) { return new Promise((resolve, reject) => { const t = db.transaction([storeName], 'readonly'); t.objectStore(storeName).getAll().onsuccess = e => resolve(e.target.result); t.onerror = e => reject(e.target.error); }); }
+        function deleteFromStore(storeName, id) { return new Promise((resolve, reject) => { const t = db.transaction([storeName], 'readwrite'); t.objectStore(storeName).delete(id).onsuccess = () => resolve(); t.onerror = e => reject(e.target.error); }); }
+        function getFromStoreById(storeName, id) { return new Promise((resolve, reject) => { const t = db.transaction([storeName], 'readonly'); t.objectStore(storeName).get(id).onsuccess = e => resolve(e.target.result); t.onerror = e => reject(e.target.error); }); }
+        function updateInStore(storeName, data) { return new Promise((resolve, reject) => { const t = db.transaction([storeName], 'readwrite'); t.objectStore(storeName).put(data).onsuccess = () => resolve(); t.onerror = e => reject(e.target.error); }); }
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            await openDB();
+            
+            let lastReportSummary = {};
+            let lastFilteredActivities = [];
+            
+            const addCategoryBtn = document.getElementById('add-category-btn');
+            const newCategoryNameInput = document.getElementById('new-category-name');
+            const parentCategorySelect = document.getElementById('parent-category-select');
+            const categoryListDiv = document.getElementById('category-list');
+            const activityCategorySelect = document.getElementById('activity-category');
+            const activityForm = document.getElementById('activity-form');
+            const activitiesTableBody = document.getElementById('activities-table-body');
+            const emptyStateDiv = document.getElementById('empty-state');
+            
+            const editActivityModal = document.getElementById('edit-activity-modal');
+            const editActivityForm = document.getElementById('edit-activity-form');
+            const cancelEditBtn = document.getElementById('cancel-edit-btn');
+            
+            const reportBtn = document.getElementById('report-btn');
+            const reportModal = document.getElementById('report-modal');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            const monthSelect = document.getElementById('month-select');
+            const exportBtn = document.getElementById('export-btn');
+            const reportFiltersDiv = document.getElementById('report-filters');
+            const applyFiltersBtn = document.getElementById('apply-filters-btn');
+            const reportContent = document.getElementById('report-content');
+            const reportMonth = document.getElementById('report-month');
+            const reportTotalHours = document.getElementById('report-total-hours');
+
+            // --- LÓGICA DE CATEGORIAS ---
+            addCategoryBtn.addEventListener('click', async () => {
+                const name = newCategoryNameInput.value.trim();
+                const parentId = parentCategorySelect.value === 'null' ? null : parseInt(parentCategorySelect.value);
+                if (name) {
+                    await addToStore(CATEGORIES_STORE, { name, parentId });
+                    newCategoryNameInput.value = '';
+                    parentCategorySelect.value = 'null';
+                    loadCategories();
+                }
+            });
+
+            async function loadCategories() {
+                const categories = await getAllFromStore(CATEGORIES_STORE);
+                const categoryTree = buildCategoryTree(categories);
+                renderCategoryUI(categoryTree);
+            }
+
+            function buildCategoryTree(categories, parentId = null) {
+                return categories
+                    .filter(cat => cat.parentId === parentId)
+                    .map(cat => ({ ...cat, children: buildCategoryTree(categories, cat.id) }))
+                    .sort((a,b) => a.name.localeCompare(b.name));
+            }
+
+            function renderCategoryUI(categoryTree) {
+                categoryListDiv.innerHTML = '';
+                parentCategorySelect.innerHTML = '<option value="null">Nenhuma (Categoria Principal)</option>';
+                activityCategorySelect.innerHTML = '<option value="">Selecione uma categoria</option>';
+                document.getElementById('edit-activity-category').innerHTML = '';
+                
+                if(categoryTree.length === 0) {
+                    categoryListDiv.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400">Nenhuma categoria criada.</p>';
+                }
+
+                function renderNode(node, level = 0) {
+                    const item = document.createElement('div');
+                    item.className = 'flex justify-between items-center bg-gray-50 dark:bg-gray-700 p-2 rounded';
+                    item.style.marginLeft = `${level * 20}px`;
+                    item.innerHTML = `<span class="text-sm">${node.name}</span><button data-id="${node.id}" class="delete-category-btn text-red-500 hover:text-red-700 text-xs font-bold">X</button>`;
+                    categoryListDiv.appendChild(item);
+
+                    const prefix = '\u00A0'.repeat(level * 4);
+                    const parentOption = new Option(prefix + node.name, node.id);
+                    const activityOption = new Option(prefix + node.name, node.name);
+                    const editActivityOption = new Option(prefix + node.name, node.name);
+
+                    parentCategorySelect.appendChild(parentOption);
+                    activityCategorySelect.appendChild(activityOption);
+                    document.getElementById('edit-activity-category').appendChild(editActivityOption);
+
+                    node.children.forEach(child => renderNode(child, level + 1));
+                }
+                categoryTree.forEach(node => renderNode(node));
+            }
+
+            categoryListDiv.addEventListener('click', async (e) => {
+                if (e.target.classList.contains('delete-category-btn')) {
+                    const categoryId = parseInt(e.target.dataset.id);
+                    const categories = await getAllFromStore(CATEGORIES_STORE);
+                    const hasChildren = categories.some(c => c.parentId === categoryId);
+                    if (hasChildren) {
+                        alert('Não é possível excluir uma categoria que possui subcategorias.');
+                        return;
+                    }
+                    await deleteFromStore(CATEGORIES_STORE, categoryId);
+                    loadCategories();
+                }
+            });
+
+            // --- LÓGICA DE ATIVIDADES ---
+            activityForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const description = document.getElementById('activity-description').value;
+                const category = document.getElementById('activity-category').value;
+                const date = document.getElementById('activity-date').value;
+                const startTime = document.getElementById('start-time').value;
+                const endTime = document.getElementById('end-time').value;
+
+                if (description && category && date && startTime && endTime) {
+                    const startDateTime = new Date(`${date}T${startTime}`);
+                    const endDateTime = new Date(`${date}T${endTime}`);
+                    if (endDateTime <= startDateTime) {
+                        alert("A hora de fim deve ser maior que a hora de início.");
+                        return;
+                    }
+                    const durationInMinutes = (endDateTime - startDateTime) / (1000 * 60);
+                    await addToStore(ACTIVITIES_STORE, { description, category, date, startTime, endTime, durationInMinutes });
+                    activityForm.reset();
+                    document.getElementById('activity-date').valueAsDate = new Date();
+                    loadActivities();
+                }
+            });
+
+            async function loadActivities() {
+                const [activities, categories] = await Promise.all([
+                    getAllFromStore(ACTIVITIES_STORE),
+                    getAllFromStore(CATEGORIES_STORE)
+                ]);
+                renderActivities(activities, categories);
+            }
+
+            function getCategoryPath(categoryName, allCategories) {
+                const categoriesMap = new Map(allCategories.map(c => [c.name, c]));
+                const parentMap = new Map(allCategories.map(c => [c.id, c.name]));
+                let path = [categoryName];
+                let current = categoriesMap.get(categoryName);
+                while (current && current.parentId !== null) {
+                    const parentName = parentMap.get(current.parentId);
+                    if (parentName) {
+                        path.unshift(parentName);
+                        current = categoriesMap.get(parentName);
+                    } else {
+                        break;
+                    }
+                }
+                return path.join(' / ');
+            }
+
+            function renderActivities(activities, categories) {
+                activitiesTableBody.innerHTML = '';
+                if (activities.length > 0) {
+                    emptyStateDiv.classList.add('hidden');
+                } else {
+                    emptyStateDiv.classList.remove('hidden');
+                }
+                
+                activities.sort((a, b) => new Date(b.date + 'T' + b.startTime) - new Date(a.date + 'T' + a.startTime)).forEach(act => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-gray-50 dark:hover:bg-gray-700';
+                    const categoryPath = getCategoryPath(act.category, categories);
+                    tr.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm font-medium text-gray-900 dark:text-white">${act.description}</div><div class="text-sm text-gray-500 dark:text-gray-400">${act.startTime} - ${act.endTime}</div></td>
+                        <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">${categoryPath}</span></td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${new Date(act.date + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${formatDuration(act.durationInMinutes)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button data-id="${act.id}" class="edit-activity-btn text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-2">Editar</button>
+                            <button data-id="${act.id}" class="delete-activity-btn text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">Excluir</button>
+                        </td>
+                    `;
+                    activitiesTableBody.appendChild(tr);
+                });
+            }
+
+            activitiesTableBody.addEventListener('click', async (e) => {
+                const target = e.target;
+                if (target.classList.contains('delete-activity-btn')) {
+                    const activityId = parseInt(target.dataset.id);
+                    if (confirm('Tem certeza que deseja excluir esta atividade?')) {
+                        await deleteFromStore(ACTIVITIES_STORE, activityId);
+                        loadActivities();
+                    }
+                }
+                if (target.classList.contains('edit-activity-btn')) {
+                    const activityId = parseInt(target.dataset.id);
+                    const activity = await getFromStoreById(ACTIVITIES_STORE, activityId);
+                    
+                    document.getElementById('edit-activity-id').value = activity.id;
+                    document.getElementById('edit-activity-description').value = activity.description;
+                    document.getElementById('edit-activity-category').value = activity.category;
+                    document.getElementById('edit-activity-date').value = activity.date;
+                    document.getElementById('edit-start-time').value = activity.startTime;
+                    document.getElementById('edit-end-time').value = activity.endTime;
+                    
+                    editActivityModal.classList.remove('hidden');
+                }
+            });
+
+            editActivityForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const id = parseInt(document.getElementById('edit-activity-id').value);
+                const description = document.getElementById('edit-activity-description').value;
+                const category = document.getElementById('edit-activity-category').value;
+                const date = document.getElementById('edit-activity-date').value;
+                const startTime = document.getElementById('edit-start-time').value;
+                const endTime = document.getElementById('edit-end-time').value;
+
+                const startDateTime = new Date(`${date}T${startTime}`);
+                const endDateTime = new Date(`${date}T${endTime}`);
+                if (endDateTime <= startDateTime) {
+                    alert("A hora de fim deve ser maior que a hora de início.");
+                    return;
+                }
+                const durationInMinutes = (endDateTime - startDateTime) / (1000 * 60);
+
+                await updateInStore(ACTIVITIES_STORE, { id, description, category, date, startTime, endTime, durationInMinutes });
+                editActivityModal.classList.add('hidden');
+                loadActivities();
+            });
+            
+            cancelEditBtn.addEventListener('click', () => {
+                editActivityModal.classList.add('hidden');
+            });
+
+
+            // --- LÓGICA DO RELATÓRIO ---
+            reportBtn.addEventListener('click', async () => {
+                reportModal.classList.remove('hidden');
+                const today = new Date();
+                monthSelect.value = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}`;
+                await populateReportFilters();
+                await generateReport();
+            });
+            
+            async function populateReportFilters() {
+                const categories = await getAllFromStore(CATEGORIES_STORE);
+                const categoryTree = buildCategoryTree(categories);
+                reportFiltersDiv.innerHTML = '';
+                function renderFilterNode(node, level = 0) {
+                    const item = document.createElement('div');
+                    item.style.marginLeft = `${level * 20}px`;
+                    item.innerHTML = `<label class="flex items-center space-x-2"><input type="checkbox" class="category-filter" value="${node.name}" checked><span>${node.name}</span></label>`;
+                    reportFiltersDiv.appendChild(item);
+                    node.children.forEach(child => renderFilterNode(child, level + 1));
+                }
+                categoryTree.forEach(node => renderFilterNode(node));
+            }
+
+            closeModalBtn.addEventListener('click', () => reportModal.classList.add('hidden'));
+            applyFiltersBtn.addEventListener('click', generateReport);
+            exportBtn.addEventListener('click', exportToXls);
+
+            async function generateReport() {
+                const [year, month] = monthSelect.value.split('-');
+                const allActivities = await getAllFromStore(ACTIVITIES_STORE);
+                const monthActivities = allActivities.filter(act => act.date.startsWith(`${year}-${month}`));
+
+                const selectedCategories = Array.from(document.querySelectorAll('.category-filter:checked')).map(cb => cb.value);
+                const categories = await getAllFromStore(CATEGORIES_STORE);
+                const categoryTree = buildCategoryTree(categories);
+
+                function getSubCategoryNames(categoryName) {
+                    const findNode = (nodes) => {
+                        for(const node of nodes) {
+                            if (node.name === categoryName) return node;
+                            const found = findNode(node.children);
+                            if (found) return found;
+                        }
+                        return null;
+                    }
+                    const node = findNode(categoryTree);
+                    if (!node) return [categoryName];
+                    let names = [node.name];
+                    const collectNames = (n) => { n.children.forEach(child => { names.push(child.name); collectNames(child); }); }
+                    collectNames(node);
+                    return names;
+                }
+                
+                const allSelectedNames = new Set(selectedCategories.flatMap(name => getSubCategoryNames(name)));
+                const filteredActivities = monthActivities.filter(act => allSelectedNames.has(act.category));
+                lastFilteredActivities = filteredActivities;
+
+                const summary = {};
+                let totalMinutes = 0;
+                filteredActivities.forEach(act => {
+                    summary[act.category] = (summary[act.category] || 0) + act.durationInMinutes;
+                    totalMinutes += act.durationInMinutes;
+                });
+                lastReportSummary = { summary, totalMinutes };
+                renderReport(summary, totalMinutes, month, year);
+            }
+
+            function renderReport(summary, totalMinutes, month, year) {
+                const monthName = new Date(year, month - 1, 1).toLocaleString('pt-BR', { month: 'long' });
+                reportMonth.textContent = `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} de ${year}`;
+                reportContent.innerHTML = '';
+                const sortedCategories = Object.keys(summary).sort();
+                if (sortedCategories.length === 0) {
+                    reportContent.innerHTML = `<p class="text-gray-500 dark:text-gray-400">Nenhuma atividade encontrada para os filtros selecionados.</p>`;
+                    reportTotalHours.textContent = "0h 0m";
+                    return;
+                }
+                const table = document.createElement('table');
+                table.className = 'w-full text-left';
+                table.innerHTML = `<thead class="border-b border-gray-200 dark:border-gray-700"><tr><th class="py-2 font-semibold">Categoria</th><th class="py-2 font-semibold text-right">Tempo Total</th></tr></thead><tbody></tbody>`;
+                const tbody = table.querySelector('tbody');
+                sortedCategories.forEach(category => {
+                    tbody.innerHTML += `<tr class="border-b border-gray-200 dark:border-gray-700"><td class="py-3">${category}</td><td class="py-3 text-right font-medium">${formatDuration(summary[category])}</td></tr>`;
+                });
+                reportContent.appendChild(table);
+                reportTotalHours.textContent = formatDuration(totalMinutes);
+            }
+            
+            async function exportToXls() {
+                if (!lastFilteredActivities || lastFilteredActivities.length === 0) {
+                    alert('Não há dados para exportar.');
+                    return;
+                }
+
+                const allCategories = await getAllFromStore(CATEGORIES_STORE);
+                const { totalMinutes } = lastReportSummary;
+                const [year, month] = monthSelect.value.split('-');
+                const monthName = new Date(year, month - 1, 1).toLocaleString('pt-BR', { month: 'long' });
+                const reportMonthText = `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} de ${year}`;
+                
+                const style = `<style>
+                    body { background-color: #1f2937; color: #f3f4f6; }
+                    table, th, td { border: 1px solid #4b5563; border-collapse: collapse; padding: 5px; }
+                    th { font-weight: bold; background-color: #374151; }
+                </style>`;
+
+                let xlsContent = `
+                    <html>
+                    <head>
+                        <meta charset="UTF-8">
+                        ${style}
+                    </head>
+                    <body>
+                    <table>
+                        <tr><td colspan="7"><b>Mês do Relatório:</b> ${reportMonthText}</td></tr>
+                        <tr><td colspan="7"><b>Total de Horas:</b> ${formatDuration(totalMinutes)}</td></tr>
+                        <tr><td colspan="7"></td></tr>
+                        <thead>
+                            <tr>
+                                <th>Descrição</th>
+                                <th>Categoria</th>
+                                <th>Sub-categoria</th>
+                                <th>Data</th>
+                                <th>Início</th>
+                                <th>Fim</th>
+                                <th>Duração (h:m)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                lastFilteredActivities.forEach(act => {
+                    const pathParts = getCategoryPath(act.category, allCategories).split(' / ');
+                    const mainCategory = pathParts[0] || '';
+                    const subCategory = pathParts.length > 1 ? pathParts[pathParts.length - 1] : '';
+                    
+                    xlsContent += '<tr>';
+                    xlsContent += `<td>${act.description || ''}</td>`;
+                    xlsContent += `<td>${mainCategory}</td>`;
+                    xlsContent += `<td>${subCategory}</td>`;
+                    xlsContent += `<td>${new Date(act.date + 'T00:00:00').toLocaleDateString('pt-BR')}</td>`;
+                    xlsContent += `<td>${act.startTime || ''}</td>`;
+                    xlsContent += `<td>${act.endTime || ''}</td>`;
+                    xlsContent += `<td>${formatDuration(act.durationInMinutes)}</td>`;
+                    xlsContent += '</tr>';
+                });
+
+                xlsContent += '</tbody></table></body></html>';
+
+                const blob = new Blob([xlsContent], { type: 'application/vnd.ms-excel;charset=utf-8' });
+                const link = document.createElement("a");
+                if (link.download !== undefined) {
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", `relatorio_detalhado_${monthSelect.value}.xls`);
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
+            }
+
+            function formatDuration(totalMinutes) { if (totalMinutes < 1) return "0m"; const h = Math.floor(totalMinutes / 60); const m = Math.round(totalMinutes % 60); return `${h}h ${m}m`; }
+
+            document.getElementById('activity-date').valueAsDate = new Date();
+            loadCategories();
+            loadActivities();
+        });
+    </script>
+</body>
+</html>
